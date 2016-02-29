@@ -1,0 +1,149 @@
+﻿@{
+    ViewBag.Title = "Home Page";
+    Layout = null;
+}
+<link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
+<link href="~/Content/bootstrap.css" rel="stylesheet" />
+<script src="~/Scripts/jquery-1.10.2.js"></script>
+<script src="~/Scripts/bootstrap.js"></script>
+<script src="~/Scripts/jquery-ui-1.11.4.js"></script>
+<script src="http://maps.googleapis.com/maps/api/js"></script>
+
+<script>
+
+    (function () {
+        var flickerAPI = "http://177.47.23.157:10009/WebService/Usuario.ashx?Method=GetInstrutores";
+        $.getJSON(flickerAPI, {
+            tagmode: "any",
+            format: "json"
+        })
+        .done(function (data) {
+
+            $.each(data, function (key, value) {
+                var option = $('<option />').val(value.ID).text(value.Nome);
+                $("#dropDownDest").append(option);
+            });
+        });
+    })();
+
+</script>
+<script>
+    $(function () {
+        $("#datepicker").datepicker();
+    });
+</script>
+<script>
+    var map;
+    var mapOptions = {
+        center: new google.maps.LatLng(-23.7103031, -46.4928908), zoom: 10,
+        mapTypeId: google.maps.MapTypeId.ROADMAP
+    };
+
+    function initialize(turmaCoordinate, userCoordinates, userRoute) {
+
+        var contentString = '<div id="content">' +
+                              '<div id="siteNotice">' +
+                              '</div>' +
+                              '<h2 id="firstHeading" class="firstHeading">Treinamento 1</h2>' +
+                              '<div id="bodyContent">' +
+                              '<p><b>Latitute:</b> -23.7103031' +
+                              '<p><b>Longitude:</b> -46.4928908' +
+                              '<p><b>Check in:</b> 21/02/2016' +
+                              '<p><b>Link Treinamento</b>: <a target="_black" href="http://www.google.com.br">' +
+                              'Treinamento1' +
+                              '</div>' +
+                              '</div>';
+
+        map = new google.maps.Map(document.getElementById("googleMap"), mapOptions);
+
+        var userCoor = [['Santo Adnré', -23.7103031, -46.4928908],
+                        ['Sao Bernardo', -23.8039783, -46.6697463],
+                        ['Diadema', -23.6982771, -46.6476582],
+                        ['Sao Caetano', -23.6145965, -46.5729769]];
+
+        var routeCoor = [[contentString, -23.6627755, -46.5503213],
+                        [contentString, -23.5918044, -46.5458038],
+                        [contentString, -23.7103031, -46.4928908],
+                        [contentString, -23.695179, -46.5592617],
+                        [contentString, -23.8039783, -46.6697463],
+                        [contentString, -23.6884814, -46.6086069],
+                        [contentString, -23.6982771, -46.6476582],
+                        [contentString, -23.6146879, -46.5695735],
+                        [contentString, -23.6145965, -46.5729769]]
+
+        var route = [new google.maps.LatLng(-23.6627755, -46.5503213), //santo andre
+                     new google.maps.LatLng(-23.5918044, -46.5458038), // big burger
+                     new google.maps.LatLng(-23.7103031, -46.4928908), //santo andre
+                     new google.maps.LatLng(-23.695179, -46.5592617), //sao bernardo
+                     new google.maps.LatLng(-23.8039783, -46.6697463), //sao bernardo
+                     new google.maps.LatLng(-23.6884814, -46.6086069), //diadema
+                     new google.maps.LatLng(-23.6982771, -46.6476582), //diadema
+                     new google.maps.LatLng(-23.6146879, -46.5695735), //sao caetano
+                     new google.maps.LatLng(-23.6145965, -46.5729769)] //sao caetano
+
+
+        var userCoorPath = [new google.maps.LatLng(-23.7103031, -46.4928908),
+                            new google.maps.LatLng(-23.8039783, -46.6697463),
+                            new google.maps.LatLng(-23.6982771, -46.6476582),
+                            new google.maps.LatLng(-23.6145965, -46.5729769)]
+
+        var userCoordinate = new google.maps.Polyline({
+            path: route,
+            strokeColor: '#000000',
+            strokeOpacity: 0.8,
+            strokeWeight: 2
+        });
+        userCoordinate.setMap(map);
+
+        var infowindow = new google.maps.InfoWindow();
+
+        var marker, i;
+
+        //setMarkerAndInfoWindow(map, userCoor, marker, i, infowindow); //Turmas
+
+        setMarkerAndInfoWindow(map, routeCoor, marker, i, infowindow, 'http://maps.google.com/mapfiles/kml/pal4/icon57.png'); // User Routes
+    }
+
+    google.maps.event.addDomListener(window, 'load', initialize);
+
+    function setMarkerAndInfoWindow(map, userCoor, marker, i, infowindow, icon) {
+        for (i = 0; i < userCoor.length; i++) {
+            marker = new google.maps.Marker({
+                position: new google.maps.LatLng(userCoor[i][1], userCoor[i][2]),
+                icon: icon,
+                map: map
+            });
+
+            google.maps.event.addListener(marker, 'click', (function (marker, i) {
+                return function () {
+                    infowindow.setContent(userCoor[i][0]);
+                    infowindow.open(map, marker);
+                }
+            })(marker, i));
+        }
+    }
+
+</script>
+
+
+<form>
+    <div class="form-group">
+    </div>
+    <div class="form-group">
+        <label for="exampleInputPassword1">Instrutor:</label>
+        <select id="dropDownDest"></select>
+    </div>
+    <div class="form-group">
+        <label for="exampleInputFile">Date</label>
+        <input type="text" id="datepicker">
+    </div>
+
+    <button type="button" onclick="getGeolocation();" class="btn btn-default">Submit</button>
+</form>
+
+<div class="jumbotron">
+    <div id="googleMap" style="width:1024px;height:760px;"></div>
+</div>
+<script>
+  
+</script>

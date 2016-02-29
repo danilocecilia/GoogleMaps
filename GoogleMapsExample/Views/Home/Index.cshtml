@@ -1,0 +1,33 @@
+﻿@{
+    ViewBag.Title = "Home Page";
+    Layout = null;
+}
+<link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
+<link href="~/Content/bootstrap.css" rel="stylesheet" />
+<script src="~/Scripts/jquery-1.10.2.js"></script>
+<script src="~/Scripts/bootstrap.js"></script>
+<script src="~/Scripts/jquery-ui-1.11.4.js"></script>
+<script src="http://maps.googleapis.com/maps/api/js"></script>
+<script src="~/Scripts/map.js"></script>
+
+<form>
+    <div class="form-group">
+    </div>
+    <div class="form-group">
+        <label for="exampleInputPassword1">Instrutor:</label>
+        <select id="dropDownDest"></select>
+    </div>
+    <div class="form-group">
+        <label for="exampleInputFile">Date</label>
+        <input type="text" id="datepicker">
+    </div>
+
+    <button type="button" onclick="getGeolocation();" class="btn btn-default">Submit</button>
+</form>
+
+<div class="jumbotron">
+    <div id="googleMap" style="width:1024px;height:760px;"></div>
+</div>
+
+<input id="copyTarget" value="" width="100%">
+
