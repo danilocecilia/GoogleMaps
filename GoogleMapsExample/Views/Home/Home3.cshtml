@@ -1,0 +1,431 @@
+﻿
+@{
+    Layout = null;
+}
+@{
+    ViewBag.Title = "Home Page";
+    Layout = null;
+}
+
+<head>
+    <title>Map</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Bootstrap core CSS -->
+    <link href="http://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.0.2/css/bootstrap.css" rel="stylesheet" media="screen">
+
+    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="http://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7/html5shiv.js"></script>
+      <script src="http://cdnjs.cloudflare.com/ajax/libs/respond.js/1.3.0/respond.js"></script>
+    <![endif]-->
+    <style>
+        html {
+            height: 100%;
+        }
+
+        body {
+            height: 100%;
+            background-color: #CCC;
+        }
+
+        #map-outer {
+            height: 660px;
+            padding: 20px;
+            border: 2px solid #CCC;
+            margin-bottom: 20px;
+            background-color: #FFF;
+        }
+
+        #googleMap {
+            height: 620px;
+        }
+
+        @@media all and (max-width: 991px) {
+            #map-outer {
+                height: 650px;
+            }
+        }
+
+        #matrix {
+            background-color: #DDDDDD;
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 1px;
+            font-size: small;
+        }
+    </style>
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
+    <script src="~/Scripts/jquery-1.10.2.js"></script>
+    <script src="~/Scripts/bootstrap.js"></script>
+    <script src="~/Scripts/jquery-ui-1.11.4.js"></script>
+    <script src="http://maps.googleapis.com/maps/api/js?sensor=false&libraries=geometry"></script>
+    <script>
+        var map, latitudeCenterPosition, longitudeCenterPosition;
+        var origins = [];
+        var destinations = [];
+        var originsId = [];
+        var destionationsId = [];
+        var dirService, dirRenderer;
+        var routeQuery;
+        var bounds;
+        var panning = false;
+        var dms;
+        var query;
+        var highlightedCell;
+
+        function loadDefaultMap() {
+            var mapProp = {
+                center: new google.maps.LatLng(-11.9957012, -55.5338241),
+                zoom: 5,
+                mapTypeId: google.maps.MapTypeId.ROADMAP
+            };
+            var map = new google.maps.Map(document.getElementById("googleMap"), mapProp);
+        }
+
+        function loadInstructors() {
+            $.ajax({
+                url: 'http://177.47.23.157:10009/WebService/Usuario.ashx?Method=GetInstrutores',
+                async: false,
+                dataType: 'json',
+                success: function (data) {
+                    if (data.length > 0) {
+                        $.each(data, function (key, value) {
+                            var option = $('<option />').val(value.ID).text(value.Nome);
+                            $("#ddlInstructors").append(option);
+                        });
+                    }
+                }
+            });
+
+        }
+
+        function loadDropdownsOrigemDestino() {
+            $.ajax({
+                url: 'http://177.47.23.157:10009/WebService/GeoPosition.ashx?Method=GetGeoPositionByInstrutorByData&idUsuario=' + $('#ddlInstructors').val() + '&data=' + $('#datepicker').val() + '',
+                async: false,
+                dataType: 'json',
+                success: function (data) {
+                    if (data.length > 0) {
+                        $.each(data, function (key, value) {
+                            $("#ddlOrigem").append($('<option />').val(value.ID).text(value.ID));
+                            $("#ddlDestino").append($('<option />').val(value.ID).text(value.ID));
+                        });
+                    }
+                }
+            });
+        }
+
+        $(function () {
+            $('#msgLenghtRoute').attr('style', 'display:none');
+
+            loadInstructors();
+
+            $('#ddlInstructors').change(function () {
+                    loadDropdownsOrigemDestino();
+                }
+            );
+
+            $("#datepicker").datepicker({ dateFormat: 'dd/mm/yy' });
+
+            jQuery(document).on("click", ".button", function (e) {
+                e.preventDefault();
+                getGeolocation();
+            });
+
+            loadDefaultMap();
+        });
+
+        function getOrigigenDestiationArray(obj) {
+            var arr = new Array();
+
+            for (var i = 0; i < obj.length; i++) {
+                arr.push(obj[i][0]);
+            }
+            return arr;
+        }
+
+        function createOriginArray(origin, destination) {
+            var org = new Array();
+            $.ajax({
+                url: 'http://177.47.23.157:10009/WebService/GeoPosition.ashx?Method=GetGeoPositionByInstrutorByData',
+                async: false,
+                data: { idUsuario: $('#ddlInstructors').val(), data: $('#datepicker').val() },
+                dataType: 'json',
+                success: function (data) {
+                    if (data.length > 0) {
+                        for (var i = 0; i < data.length; i++) {
+                            if (data[i].ID >= origin && data[i].ID <= destination) {
+                                var array = new Array();
+                                var orig = new google.maps.LatLng(data[i].Latitude, data[i].Longitude);
+                                //array.push(orig);
+                                org.push(orig);
+                            }
+                        }
+                    }
+                }
+            });
+            return org;
+        }
+
+        function createDestinationArray(origin, destination) {
+            var dst = new Array();
+            var dstIds = new Array();
+            $.ajax({
+                url: 'http://177.47.23.157:10009/WebService/GeoPosition.ashx?Method=GetGeoPositionByInstrutorByData',
+                async: false,
+                data: { idUsuario: $('#ddlInstructors').val(), data: $('#datepicker').val() },
+                dataType: 'json',
+                success: function (data) {
+                    if (data.length > 0) {
+                        for (var i = 0; i < data.length; i++) {
+                            if (data[i].ID > origin && data[i].ID <= destination) {
+                                var array = new Array();
+                                var dest = new google.maps.LatLng(data[i].Latitude, data[i].Longitude);
+                                array.push(dest, data[i].ID);
+                                dst.push(array);
+                            }
+                        }
+                    }
+                }
+            });
+            return dst;
+        }
+
+        function calculateDistance(origin, destination) {
+            route = createOriginArray(origin, destination);
+
+            var polyline = new google.maps.Polyline({
+                path: route,
+                strokeColor: "#ff0000",
+                strokeOpacity: 0.6,
+                strokeWeight: 5
+            });
+
+            var lengthInMeters = google.maps.geometry.spherical.computeLength(polyline.getPath());
+
+            console.log(lengthInMeters);
+            polyline.setMap(map);
+            $('#msgLenghtRoute').attr('style', 'display:block');
+            $('#spanOriginRoute').text($('#ddlOrigem').val());
+            $('#spanDestRoute').text($('#ddlDestino').val());
+            $('#lengthKM').text((lengthInMeters / 1000).toFixed(2));
+        };
+
+        function initialize(turmaCoordinate, userCoordinates, userRoute, turmaRoute) {
+            if (userCoordinates.length > 0) {
+                latitudeCenterPosition = userCoordinates[1][1];
+                longitudeCenterPosition = userCoordinates[1][2];
+            }
+            else if (turmaCoordinate.length > 0) {
+                latitudeCenterPosition = turmaCoordinate[0][1];
+                longitudeCenterPosition = turmaCoordinate[0][2];
+            }
+
+            var mapOptions = {
+                center: new google.maps.LatLng(latitudeCenterPosition, longitudeCenterPosition), zoom: 15,
+                mapTypeId: google.maps.MapTypeId.ROADMAP
+            };
+
+            map = new google.maps.Map(document.getElementById("googleMap"), mapOptions);
+
+            var userCoordinate = new google.maps.Polyline({
+                path: userRoute,
+                strokeColor: '#000000',
+                strokeOpacity: 0.8,
+                strokeWeight: 2
+            });
+            userCoordinate.setMap(map);
+
+            var infowindow = new google.maps.InfoWindow();
+
+            var marker, i;
+
+            setMarkerAndInfoWindow(map, turmaCoordinate, marker, i, infowindow); //Turmas
+            setMarkerAndInfoWindow(map, userCoordinates, marker, i, infowindow, 'http://maps.google.com/mapfiles/kml/pal4/icon57.png'); // User Routes
+
+            calculateDistance($('#ddlOrigem').val(), $('#ddlDestino').val());
+
+            google.maps.event.addListener(map, "click", function (e) {
+                //lat and lng is available in e object
+                var t = $('#copyTarget').val().concat(' | ' + e.latLng.lat() + ' | ' + e.latLng.lng());
+                $('#copyTarget').val(t);
+            });
+        }
+
+        function setMarkerAndInfoWindow(map, coordinates, marker, i, infowindow, icon) {
+            for (i = 0; i < coordinates.length; i++) {
+                marker = new google.maps.Marker({
+                    position: new google.maps.LatLng(coordinates[i][1], coordinates[i][2]),
+                    icon: icon,
+                    map: map
+                });
+
+                google.maps.event.addListener(marker, 'click', (function (marker, i) {
+                    return function () {
+                        infowindow.setContent(coordinates[i][0]);
+                        infowindow.open(map, marker);
+                    }
+                })(marker, i));
+            }
+        }
+
+        function getGeolocation() {
+            var drop = $('#ddlInstructors').val();
+            var date = $('#datepicker').val();
+            var userRoute = new Array();
+            var arrUserCoor = new Array();
+            var arrTrainingCoor = new Array();
+            var arrTrainingRoute = new Array();
+
+            getTurmaCoordinates(arrTrainingCoor, arrTrainingRoute);
+
+            getUserCoordinate(arrUserCoor, userRoute);
+
+            initialize(arrTrainingCoor, arrUserCoor, userRoute, arrTrainingRoute);
+        };
+
+        function getTurmaCoordinates(arrTrainingCoor, arrTrainingRoute) {
+            var url = "http://177.47.23.157:10009/WebService/Turma.ashx?Method=GetTurmasByInstrutorByData";
+
+            $.ajax({
+                url: url,
+                async: false,
+                data: { idUsuario: $('#ddlInstructors').val(), data: $('#datepicker').val() },
+                dataType: 'json',
+                success: function (data) {
+                    if (data.length > 0)
+                        fillArrayTrainingCoordinates(data, arrTrainingCoor, arrTrainingRoute);
+                }
+            });
+        };
+
+        function getUserCoordinate(arrUserCoor, userRoute) {
+            var url = "http://177.47.23.157:10009/WebService/GeoPosition.ashx?Method=GetGeoPositionByInstrutorByData";
+
+            $.ajax({
+                url: url,
+                data: { idUsuario: $('#ddlInstructors').val(), data: $('#datepicker').val() },
+                async: false,
+                dataType: 'json',
+                success: function (data) {
+                    if (data.length > 0)
+                        fillArrayUserCoordinates(data, arrUserCoor, userRoute);
+                }
+            });
+        };
+
+        function fillArrayTrainingCoordinates(data, arrTrainingCoor, arrTrainingRoute) {
+            $.each(data, function (key, value) {
+                $.map(value.Lojas, function (val, i) {
+                    var turmaArray = new Array();
+
+                    var info = '<div id="content">' +
+                                 '<div>' +
+                                     '</div>' +
+                                         '<h2 id="firstHeading">' + key + '</h2>' +
+                                         '<div id="bodyContent">' +
+                                             '<p><b>Turma:</b> ' + value.Codigo +
+                                             '<p><b>Loja:</b> ' + (value.Lojas.length > 0 ? value.Lojas[0].Nome : " - ") +
+                                             '<p><b>Instrutor:</b> ' + value.Instrutor.Nome +
+                                             '<p><b>Data Inicio Treinamento:</b> ' + value.Inicio +
+                                             '<p><b>Data Fim Treinamento:</b> ' + value.Termino +
+                                             '<p><b>Status:</b> ' + value.Status +
+                                         '</div>' +
+                                     '</div>' +
+                                 '</div>' +
+                            '</div>';
+
+                    turmaArray.push(info, val.Latitude, val.Longitude);
+
+                    arrTrainingCoor.push(turmaArray);
+
+                    var point = new google.maps.LatLng(val.Latitude, val.Longitude);
+
+                    arrTrainingRoute.push(point);
+                });
+            });
+        };
+
+        function fillArrayUserCoordinates(data, arrUserCoor, userRoute) {
+            $.each(data, function (key, value) {
+                newArray = new Array();
+
+                var info = '<div id="content">' +
+                                 '<div>' +
+                                     '</div>' +
+                                         '<h2 id="firstHeading">' + value.ID + '</h2>' +
+                                         '<div id="bodyContent">' +
+                                             '<p><b>User:</b> ' + value.Usuario +
+                                             '<p><b>Latitute:</b> ' + value.Latitude +
+                                             '<p><b>Longitude:</b> ' + value.Longitude +
+                                             '<p><b>Date:</b> ' + value.Data +
+                                         '</div>' +
+                                     '</div>' +
+                                 '</div>' +
+                            '</div>';
+
+                newArray.push(info, value.Latitude, value.Longitude);
+
+                arrUserCoor.push(newArray);
+
+                var point = new google.maps.LatLng(value.Latitude, value.Longitude);
+
+                userRoute.push(point);
+            });
+        }
+    </script>
+
+</head>
+<body>
+    <div class="container">
+        <div class="row">
+            <div id="map-outer" class="col-md-12">
+                <div id="googleMap" class="col-md-12"></div>
+            </div><!-- /map-outer -->
+            
+        </div> <!-- /row -->
+        <div class="row">
+            <span id="msgLenghtRoute">A distancia percorrida entre os pontos: <span style="font-weight:bold" id="spanOriginRoute"></span> e <span style="font-weight:bold" id="spanDestRoute"></span> foi de <span style="font-weight:bold" id="lengthKM"></span> KM</span>
+        </div>
+        <div class="row">
+            <form class="form-horizontal" name="commentform">
+                <div class="form-group">
+                    <div class="col-md-4">
+                        <span class="text-left">Instrutor</span>
+                        <select class="form-control" id="ddlInstructors" placeholder="Instrutor"></select>
+                    </div>
+                    <div class="col-md-2">
+                        <span class="text-left">Date</span>
+                        <input type="text" class="form-control" id="datepicker" value="18/03/2015">
+                    </div>
+                    <div class="col-md-6 input-group">
+                        <div class="form-group">
+                            <div class="col-md-6">
+                                <span class="text-left">Origem</span>
+                                <select class="form-control" id="ddlOrigem"></select>
+                            </div>
+                            <div class="col-md-6">
+                                <span class="text-left">Destino</span>
+                                <select class="form-control" id="ddlDestino"></select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="col-md-12">
+
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="col-md-6">
+                        <button type="button" value="Submit" onclick="getGeolocation();" class="btn btn-warning pull-right">Submit</button>
+                        <input id="copyTarget" style="display:none" value="" width="100%">
+                    </div>
+                </div>
+            </form>
+        </div><!-- /row -->
+    </div><!-- /container -->
+</body>
+
+

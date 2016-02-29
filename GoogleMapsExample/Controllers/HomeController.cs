@@ -33,5 +33,17 @@ namespace GoogleMapsExample.Controllers
 
             return View();
         }
+        public ActionResult Home2()
+        {
+            ViewBag.Message = "Your contact page.";
+
+            return View();
+        }
+        public ActionResult Home3()
+        {
+            ViewBag.Message = "Your contact page.";
+
+            return View();
+        }
     }
 }

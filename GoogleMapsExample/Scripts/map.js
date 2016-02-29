@@ -7,7 +7,7 @@
     .done(function (data) {
         $.each(data, function (key, value) {
             var option = $('<option />').val(value.ID).text(value.Nome);
-            $("#dropDownDest").append(option);
+            $("#ddlInstructors").append(option);
         });
     });
 })();
@@ -83,7 +83,7 @@ function setMarkerAndInfoWindow(map, coordinates, marker, i, infowindow, icon) {
 }
 
 function getGeolocation() {
-    var drop = $('#dropDownDest').val();
+    var drop = $('#ddlInstructors').val();
     var date = $('#datepicker').val();
     var userRoute = new Array();
     var arrUserCoor = new Array();
@@ -103,7 +103,7 @@ function getTurmaCoordinates(arrTrainingCoor, arrTrainingRoute) {
     $.ajax({
         url: url,
         async: false,
-        data: { idUsuario: $('#dropDownDest').val(), data: $('#datepicker').val() },
+        data: { idUsuario: $('#ddlInstructors').val(), data: $('#datepicker').val() },
         dataType: 'json',
         success: function (data) {
             if (data.length > 0)
@@ -117,7 +117,7 @@ function getUserCoordinate(arrUserCoor, userRoute) {
 
     $.ajax({
         url: url,
-        data: { idUsuario: $('#dropDownDest').val(), data: $('#datepicker').val() },
+        data: { idUsuario: $('#ddlInstructors').val(), data: $('#datepicker').val() },
         async: false,
         dataType: 'json',
         success: function (data) {

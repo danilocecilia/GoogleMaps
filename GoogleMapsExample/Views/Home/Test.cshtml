@@ -89,7 +89,7 @@
         .done(function (data) {
             $.each(data, function (key, value) {
                 var option = $('<option />').val(value.ID).text(value.Nome);
-                $("#dropDownDest").append(option);
+                $("#ddlInstructors").append(option);
             });
         });
     })();
@@ -117,7 +117,7 @@
         $.ajax({
             url: 'http://177.47.23.157:10009/WebService/GeoPosition.ashx?Method=GetGeoPositionByInstrutorByData&idUsuario=4081&data=18/03/2015',
             async: false,
-            //data: { idUsuario: $('#dropDownDest').val(), data: $('#datepicker').val() },
+            //data: { idUsuario: $('#ddlInstructors').val(), data: $('#datepicker').val() },
             dataType: 'json',
             success: function (data) {
                 if (data.length > 0) {
@@ -141,7 +141,7 @@
         $.ajax({
             url: 'http://177.47.23.157:10009/WebService/GeoPosition.ashx?Method=GetGeoPositionByInstrutorByData&idUsuario=4081&data=18/03/2015',
             async: false,
-            //data: { idUsuario: $('#dropDownDest').val(), data: $('#datepicker').val() },
+            //data: { idUsuario: $('#ddlInstructors').val(), data: $('#datepicker').val() },
             dataType: 'json',
             success: function (data) {
                 if (data.length > 0) {
@@ -269,7 +269,7 @@
     }
 
     function getGeolocation() {
-        var drop = $('#dropDownDest').val();
+        var drop = $('#ddlInstructors').val();
         var date = $('#datepicker').val();
         var userRoute = new Array();
         var arrUserCoor = new Array();
@@ -289,7 +289,7 @@
         $.ajax({
             url: url,
             async: false,
-            data: { idUsuario: $('#dropDownDest').val(), data: $('#datepicker').val() },
+            data: { idUsuario: $('#ddlInstructors').val(), data: $('#datepicker').val() },
             dataType: 'json',
             success: function (data) {
                 if (data.length > 0)
@@ -303,7 +303,7 @@
 
         $.ajax({
             url: url,
-            data: { idUsuario: $('#dropDownDest').val(), data: $('#datepicker').val() },
+            data: { idUsuario: $('#ddlInstructors').val(), data: $('#datepicker').val() },
             async: false,
             dataType: 'json',
             success: function (data) {
@@ -449,7 +449,7 @@
     </div>
     <div class="form-group">
         <label for="exampleInputPassword1">Instrutor:</label>
-        <select id="dropDownDest"></select>
+        <select id="ddlInstructors"></select>
     </div>
     <div class="form-group">
         <label for="exampleInputFile">Date</label>
